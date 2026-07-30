@@ -1,0 +1,30 @@
+{
+  "first_name": "Jordan",
+  "last_name": "Reyes",
+  "title": "Founder | CEO",
+  "company": "Northwind",
+  "tagline": "Logistics software for mid-market shippers",
+  "phone": "+15551234567",
+  "phone_display": "(555) 123-4567",
+  "email": "jordan@example.com",
+  "website": "https://example.com",
+  "website_display": "example.com",
+  "linkedin": "https://www.linkedin.com/in/example",
+  "linkedin_display": "jordan-reyes",
+  "location": "Philadelphia, PA",
+  "photo": "",
+  "logo_src": "logo.png",
+  "logo": "",
+  "card_url": "https://card.example.com/",
+
+  "_comment": "Delete the theme block to use the default slate palette. Every key is optional.",
+  "theme": {
+    "accent": "#4F7CFF",
+    "accent_deep": "#3D63D8",
+    "accent_bright": "#7CA0FF",
+    "accent_text": "#2F4FA8",
+    "ink": "#1A1A1A",
+    "ink_on_accent": "#FFFFFF",
+    "paper": "#FAFAFA"
+  }
+}

@@ -1,0 +1,25 @@
+# ---- YOUR private data. Never committed; stays on your machine. ----
+# NOTE: gitignore has no trailing-comment syntax — a comment after a pattern on the
+# same line makes it a literal pattern that matches nothing. Keep comments on their
+# own lines.
+
+# real name, mobile, email (the template ships card.example.json instead)
+card.json
+
+# your brand asset + source artwork
+logo.png
+assets/
+
+# generated site — contains your details and your vCard
+dist/
+
+# generated PDFs and QR codes — contain your details
+print/
+
+# ---- generated / local ----
+.venv/
+fonts/
+.netlify/
+__pycache__/
+*.pyc
+.DS_Store
