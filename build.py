@@ -424,6 +424,10 @@ DIST.mkdir(exist_ok=True)
     f'<text x="50%" y="53%" dy=".35em" text-anchor="middle" fill="{T["accent_bright"]}" '
     f'font-family="Inter,-apple-system,Helvetica,Arial" font-size="228" font-weight="900">{E(monogram)}</text></svg>'
 )
+# GitHub Pages runs Jekyll by default, which drops files starting with "_" — that
+# would silently swallow _headers. This opts out.
+(DIST / ".nojekyll").write_text("")
+
 # Netlify: serve .vcf with the right type so phones open Contacts instead of downloading.
 (DIST / "_headers").write_text(
     "/contact.vcf\n"
