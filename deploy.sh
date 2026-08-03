@@ -19,7 +19,9 @@ if ! command -v netlify >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! netlify status >/dev/null 2>&1; then
+# `netlify status` exits 1 when the folder isn't linked to a project yet, even when
+# you are logged in — so check the account directly instead.
+if ! netlify api getCurrentUser >/dev/null 2>&1; then
   echo "Not logged in. Run:  netlify login"
   exit 1
 fi

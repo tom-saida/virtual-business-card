@@ -149,6 +149,65 @@ brandmark = (f'<img class="logo" src="{E(logo_file)}" alt="{E(C["company"])}" '
              if logo_file else f'<div class="wordmark">{E(C["company"])}</div>')
 
 
+# ---------------------------------------------- contact exchange + analytics
+# Netlify Forms works by scanning the deployed HTML for a form tagged data-netlify,
+# so the markup has to be present even though the dialog starts closed. Submitting
+# over fetch keeps the visitor on the card instead of bouncing to a success page.
+FORM_NAME = "contact-exchange"
+I_SWAP = '<svg viewBox="0 0 24 24"><path d="M7 3 3 7l4 4V8h9V6H7V3Zm10 10v3H8v2h9v3l4-4-4-4Z"/></svg>'
+
+exchange_btn = exchange_form = exchange_js = ""
+if C.get("exchange_form"):
+    exchange_btn = f"""      <button class="ghost wide" id="swapbtn">
+        {I_SWAP} Send me your info
+      </button>"""
+    exchange_form = f"""<dialog id="swapdlg"><div class="formbox">
+  <form id="swapform" name="{FORM_NAME}" method="POST"
+        data-netlify="true" netlify-honeypot="bot-field">
+    <input type="hidden" name="form-name" value="{FORM_NAME}">
+    <p class="fh">Send me your info</p>
+    <p class="fs">Goes straight to {E(C['first_name'])} — never shown publicly.</p>
+    <input class="hp" name="bot-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <input class="fi" name="name" placeholder="Name" required autocomplete="name">
+    <input class="fi" name="email" type="email" placeholder="Email" required autocomplete="email">
+    <input class="fi" name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+    <input class="fi" name="company" placeholder="Company (optional)" autocomplete="organization">
+    <textarea class="fi" name="note" rows="2" placeholder="Note (optional)"></textarea>
+    <button class="save fsub" type="submit">Send</button>
+    <button class="fcancel" type="button" id="swapcancel">Cancel</button>
+  </form>
+</div></dialog>"""
+    exchange_js = """
+  var sdlg = document.getElementById('swapdlg'), sform = document.getElementById('swapform');
+  document.getElementById('swapbtn').addEventListener('click', function(){ sdlg.showModal(); });
+  document.getElementById('swapcancel').addEventListener('click', function(){ sdlg.close(); });
+  sform.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var btn = sform.querySelector('button[type=submit]');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      var res = await fetch('/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams(new FormData(sform)).toString()
+      });
+      if (!res.ok) throw new Error(res.status);
+      sdlg.close(); sform.reset(); say('Thanks — got it');
+    } catch (err) {
+      say('Could not send — try email');
+    }
+    btn.disabled = false; btn.textContent = 'Send';
+  });"""
+
+_an = C.get("analytics") or {}
+analytics = ""
+if _an.get("cloudflare_token"):
+    analytics = ('<script defer src="https://static.cloudflareinsights.com/beacon.min.js" '
+                 f"data-cf-beacon='{{\"token\": \"{_an['cloudflare_token']}\"}}'></script>")
+elif _an.get("custom_script"):
+    analytics = _an["custom_script"]
+
+
 TEMPLATE = r"""<!doctype html>
 <html lang="en">
 <head>
@@ -289,6 +348,26 @@ TEMPLATE = r"""<!doctype html>
     pointer-events:none;transition:.25s;box-shadow:0 10px 28px -8px rgba(0,0,0,.5);z-index:9
   }
   .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  /* ---- contact-exchange form ---- */
+  .wide{width:100%;margin-top:9px}
+  .formbox{background:var(--card);padding:20px 18px 18px;border-radius:12px;
+    border-top:3px solid var(--gold);width:min(92vw,380px);text-align:left}
+  .fh{font-family:var(--sans);font-weight:900;text-transform:uppercase;font-size:16px;
+    letter-spacing:-.01em;margin:0 0 5px;color:var(--ink)}
+  .fs{font-size:11px;color:var(--mut);margin:0 0 14px;line-height:1.5}
+  .fi{width:100%;margin-bottom:9px;padding:12px 13px;border-radius:8px;
+    border:1px solid var(--line);background:var(--paper);color:var(--ink);
+    font-family:var(--mono);font-size:15px;/* >=16px avoids iOS zoom-on-focus; 15 is
+    fine because the viewport meta already pins scale */}
+  .fi:focus{outline:none;border-color:var(--gold)}
+  .fi::placeholder{color:var(--mut);opacity:.75}
+  .fsub{width:100%;border:none;font-family:var(--mono);cursor:pointer;margin-top:4px}
+  .fsub[disabled]{opacity:.6}
+  .fcancel{width:100%;margin-top:9px;padding:11px;background:none;border:none;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--mut);cursor:pointer}
+  .hp{position:absolute;left:-9999px}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -330,10 +409,12 @@ TEMPLATE = r"""<!doctype html>
         </button>
       </div>
 
+{{EXCHANGE_BTN}}
       <p class="note">Add to home screen — opens like an app</p>
     </div>
   </section>
 </main>
+{{EXCHANGE_FORM}}
 
 <dialog id="qrdlg"><div class="qrbox">{{QR}}<p>Scan to open this card</p></div></dialog>
 <div class="toast" id="toast"></div>
@@ -364,7 +445,9 @@ TEMPLATE = r"""<!doctype html>
   document.getElementById('save').addEventListener('click', function(){
     setTimeout(function(){ say('Opening contact card'); }, 350);
   });
+{{EXCHANGE_JS}}
 </script>
+{{ANALYTICS}}
 </body>
 </html>
 """
@@ -400,6 +483,10 @@ for token, value in {
     "{{SANS}}": T["font_sans"],
     "{{MONO}}": T["font_mono"],
     "{{GOOGLE_FONTS}}": T["google_fonts"],
+    "{{EXCHANGE_BTN}}": exchange_btn,
+    "{{EXCHANGE_FORM}}": exchange_form,
+    "{{EXCHANGE_JS}}": exchange_js,
+    "{{ANALYTICS}}": analytics,
     "{{INK_ON_ACCENT}}": T["ink_on_accent"],
 }.items():
     page = page.replace(token, value)

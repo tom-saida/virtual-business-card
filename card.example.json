@@ -16,7 +16,6 @@
   "logo_src": "logo.png",
   "logo": "",
   "card_url": "https://card.example.com/",
-
   "_comment": "Delete the theme block to use the default slate palette. Every key is optional.",
   "theme": {
     "accent": "#4F7CFF",
@@ -26,5 +25,10 @@
     "ink": "#1A1A1A",
     "ink_on_accent": "#FFFFFF",
     "paper": "#FAFAFA"
+  },
+  "exchange_form": true,
+  "analytics": {
+    "cloudflare_token": "",
+    "custom_script": ""
   }
 }

@@ -23,6 +23,8 @@ on top. This is the same thing, built from a JSON file.
 | **Tap actions** | Call, text, email, plus rows for website / LinkedIn / location. |
 | **QR code** | Built into the page (show it off your screen) *and* rendered onto the printable card. |
 | **Share button** | Uses the native share sheet, falls back to copy-link. |
+| **Lead capture** | Optional "Send me your info" form. Free via Netlify Forms, emails you each submission. |
+| **Analytics** | Optional. Drop in a Cloudflare Web Analytics token (free) or any other provider's script. |
 | **Print PDF** | Front + back, 3.5×2in trim with proper bleed, fonts embedded. Send it straight to a printer. |
 | **NFC-ready** | Write the card URL to a cheap NFC tag and tap phones together. |
 
@@ -116,6 +118,47 @@ preserving the anti-aliased edges instead of leaving a halo:
 
 ---
 
+## Lead capture and analytics
+
+Both are optional, both are free, and both are off until you turn them on. Together they close
+most of the gap with the paid card services.
+
+### Lead capture
+
+Set `"exchange_form": true` in `card.json`. That adds a **Send me your info** button that opens a
+form (name, email, phone, company, note). On Netlify it works with no backend at all — Netlify
+scans the deployed HTML, finds the form, and captures submissions. The free tier covers 100
+submissions a month.
+
+To get an email for every submission, add a notification hook once:
+
+```bash
+SITE_ID=$(python3 -c "import json;print(json.load(open('.netlify/state.json'))['siteId'])")
+netlify api createHookBySiteId --data "{\"site_id\":\"$SITE_ID\",\"body\":{\"type\":\"email\",\"event\":\"submission_created\",\"data\":{\"email\":\"you@example.com\"}}}"
+```
+
+The form submits over `fetch`, so the visitor stays on your card and sees a confirmation instead
+of being bounced to a success page. If you host somewhere other than Netlify, the button still
+appears but submissions won't be captured — either point the form at your own endpoint or set
+`exchange_form` to `false`.
+
+### Analytics
+
+Cloudflare Web Analytics is free, needs no cookie banner, and doesn't track people across sites.
+
+1. Sign in at <https://dash.cloudflare.com> → **Web Analytics** → **Add a site**.
+2. Enter your card's hostname. Cloudflare hands you a beacon token.
+3. Put it in `card.json` and rebuild:
+
+```jsonc
+"analytics": { "cloudflare_token": "your-token-here" }
+```
+
+Prefer something else? `"custom_script"` takes a raw `<script>` tag, so Plausible, Umami,
+GoatCounter, or Fathom all drop straight in.
+
+---
+
 ## Hosting
 
 It's static files. Anything that serves a folder works, and the free tiers are more than enough.
@@ -143,9 +186,19 @@ file instead of opening the contact card. The build writes a Netlify `_headers` 
 
 ### Custom domain
 
-A subdomain like `card.yourdomain.com` looks far better on a printed card than
-`something.netlify.app`. Add a CNAME at your DNS provider pointing to your host. If your domain's
-DNS is already managed by the same host, there's usually nothing to configure at all.
+**You do not need to buy a domain.** Every host above gives you a free one —
+`yourname.netlify.app`, `yourname.github.io`, `yourname.pages.dev`. That URL works forever, costs
+nothing, and does everything a paid domain does. Put it on an NFC tag and nobody ever sees it.
+
+A custom subdomain like `card.yourdomain.com` is purely cosmetic — it matters when the URL is
+*printed* on a card and someone reads it. If you already own a domain it's usually free to add:
+create a CNAME pointing at your host. If your domain's DNS is managed by that same host, there's
+often nothing to configure at all.
+
+**Heads up on new DNS records.** If anything looked up your subdomain *before* it existed, public
+resolvers cache the "doesn't exist" answer for as long as your zone's negative-cache TTL (often an
+hour). The site is live; the world just hasn't been told yet. Test with `dig @8.8.8.8 yourhost` and
+wait it out rather than assuming you misconfigured something.
 
 ---
 
